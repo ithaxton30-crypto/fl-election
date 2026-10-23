@@ -34,7 +34,7 @@ county_party_totals |>
   ggplot(aes(x = total_votes, y = county, fill = party)) +
   geom_col(position = "dodge") +
   scale_fill_manual(
-    values = c("DEM" = "#1d4ed8", "REP" = "#b22222"),
+    values = c("DEM" = "#eab308", "REP" = "#7e22ce"),
     labels = c("DEM" = "Democratic", "REP" = "Republican")
   ) +
   scale_x_continuous(labels = label_comma()) +
@@ -66,7 +66,7 @@ map_data("county", "florida") |>
   geom_polygon(color = "white", linewidth = 0.25) +
   coord_quickmap() +
   scale_fill_manual(
-    values = c("DEM" = "#1d4ed8", "REP" = "#b22222"),
+    values = c("DEM" = "#eab308", "REP" = "#7e22ce"),
     labels = c("DEM" = "Democratic", "REP" = "Republican")
   ) +
   labs(
