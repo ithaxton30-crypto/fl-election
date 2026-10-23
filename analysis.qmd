@@ -1,8 +1,8 @@
 ---
-title: "2026 Florida Republican Primary for Governor"
+title: "2026 Florida Primary for Governor by County and Party"
 format: html
 execute:
-  echo: true
+  echo: false
   message: false
   warning: false
 ---
@@ -14,29 +14,66 @@ library(scales)
 # Extract the county tab-separated files to a temporary directory and read them in
 pct_files <- unzip("2026-pri-outputofficial.zip", exdir = tempdir())
 
-gov_rep_totals <- read_tsv(
+county_party_totals <- read_tsv(
   pct_files,
   col_names = FALSE,
   quote = "",
-  col_select = c(office = X12, candidate = X15, party = X16, votes = X19),
+  col_select = c(county = X2, office = X12, party = X16, votes = X19),
   show_col_types = FALSE
 ) |>
-  filter(office == "Governor", party == "REP") |>
-  summarize(total_votes = sum(votes, na.rm = TRUE), .by = candidate)
+  filter(office == "Governor", party %in% c("DEM", "REP")) |>
+  summarize(total_votes = sum(votes, na.rm = TRUE), .by = c(county, party))
 ```
 
 ```{r}
-gov_rep_totals |>
-  mutate(candidate = fct_reorder(candidate, total_votes)) |>
-  ggplot(aes(x = total_votes, y = candidate)) +
-  geom_col(fill = "#b22222") +
+#| fig-height: 11
+#| fig-width: 9
+
+county_party_totals |>
+  mutate(county = fct_reorder(county, total_votes, .fun = sum)) |>
+  ggplot(aes(x = total_votes, y = county, fill = party)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual(
+    values = c("DEM" = "#1d4ed8", "REP" = "#b22222"),
+    labels = c("DEM" = "Democratic", "REP" = "Republican")
+  ) +
   scale_x_continuous(labels = label_comma()) +
   labs(
-    title = "2026 Florida Republican Primary for Governor",
-    subtitle = "Official precinct-level vote totals across all 67 counties",
+    title = "2026 Florida Primary Votes for Governor by County",
+    subtitle = "Comparing Democratic and Republican primary vote totals across all 67 counties",
     x = "Total Votes",
     y = NULL,
+    fill = "Party",
     caption = "Source: Florida Division of Elections"
   ) +
   theme_minimal()
+```
+
+```{r}
+#| fig-height: 7
+#| fig-width: 8
+
+# Find the party with the most primary votes in each county
+county_winner <- county_party_totals |>
+  slice_max(total_votes, n = 1, by = county) |>
+  mutate(county_key = str_remove_all(str_to_lower(county), "[^a-z]"))
+
+# Join with Florida county map boundaries and plot the electoral map
+map_data("county", "florida") |>
+  mutate(county_key = str_remove_all(subregion, "[^a-z]")) |>
+  left_join(county_winner, by = "county_key") |>
+  ggplot(aes(x = long, y = lat, group = group, fill = party)) +
+  geom_polygon(color = "white", linewidth = 0.25) +
+  coord_quickmap() +
+  scale_fill_manual(
+    values = c("DEM" = "#1d4ed8", "REP" = "#b22222"),
+    labels = c("DEM" = "Democratic", "REP" = "Republican")
+  ) +
+  labs(
+    title = "2026 Florida Primary for Governor: Leading Party by County",
+    subtitle = "Each county colored by the party with the highest primary vote total",
+    fill = "Leading Party",
+    caption = "Source: Florida Division of Elections"
+  ) +
+  theme_void()
 ```
