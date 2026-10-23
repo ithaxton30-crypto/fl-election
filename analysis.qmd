@@ -1,0 +1,42 @@
+---
+title: "2026 Florida Republican Primary for Governor"
+format: html
+execute:
+  echo: true
+  message: false
+  warning: false
+---
+
+```{r}
+library(tidyverse)
+library(scales)
+
+# Extract the county tab-separated files to a temporary directory and read them in
+pct_files <- unzip("2026-pri-outputofficial.zip", exdir = tempdir())
+
+gov_rep_totals <- read_tsv(
+  pct_files,
+  col_names = FALSE,
+  quote = "",
+  col_select = c(office = X12, candidate = X15, party = X16, votes = X19),
+  show_col_types = FALSE
+) |>
+  filter(office == "Governor", party == "REP") |>
+  summarize(total_votes = sum(votes, na.rm = TRUE), .by = candidate)
+```
+
+```{r}
+gov_rep_totals |>
+  mutate(candidate = fct_reorder(candidate, total_votes)) |>
+  ggplot(aes(x = total_votes, y = candidate)) +
+  geom_col(fill = "#b22222") +
+  scale_x_continuous(labels = label_comma()) +
+  labs(
+    title = "2026 Florida Republican Primary for Governor",
+    subtitle = "Official precinct-level vote totals across all 67 counties",
+    x = "Total Votes",
+    y = NULL,
+    caption = "Source: Florida Division of Elections"
+  ) +
+  theme_minimal()
+```
